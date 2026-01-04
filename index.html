@@ -94,14 +94,18 @@
       open.appendChild(div);
     });
 
-    const hist = document.getElementById("hist");
-    hist.innerHTML = rows.slice(0, 12).map(r => {
-      const resolved = r.resolved_at ? ` (resolved ${fmt(r.resolved_at)}${r.resolved_by ? " by " + r.resolved_by : ""})` : "";
-      return `<div style="padding:6px 0;border-bottom:1px solid #f0f0f0">
-        <b>${r.unit}</b> — ${r.status} — ${fmt(r.created_at)}${resolved}
-      </div>`;
-    }).join("");
-  }
+   const hist = document.getElementById("hist");
+hist.innerHTML = rows
+  .filter(r => r.resolved_at)
+  .slice(0, 5)
+  .map(r => {
+    const resolved = ` (resolved ${fmt(r.resolved_at)}${r.resolved_by ? " by " + r.resolved_by : ""})`;
+    return `<div style="padding:6px 0;border-bottom:1px solid #f0f0f0">
+      <b>${r.unit}</b> — ${r.status} — ${fmt(r.created_at)}${resolved}
+    </div>`;
+  })
+  .join("");
+}
 
   document.getElementById("refresh").addEventListener("click", () => load().catch(e => alert(e.message)));
   load().catch(e => alert(e.message));
