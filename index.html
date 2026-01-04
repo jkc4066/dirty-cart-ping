@@ -12,6 +12,26 @@
     .grid{display:grid;gap:10px;margin-top:14px}
     .card{border:1px solid #ddd;border-radius:14px;padding:12px;display:flex;justify-content:space-between;gap:10px}
     .meta{font-size:12px;opacity:.75;margin-top:4px}
+/* Status color coding */
+.card.full { background: #ffe5e5; border-color: #ffb3b3; }
+.card.half { background: #fff6d6; border-color: #ffe08a; }
+.card.empty { background: #e9ffe9; border-color: #b7f0b7; }
+
+.badge {
+  display: inline-block;
+  font-size: 12px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  border: 1px solid #ddd;
+  margin-left: 8px;
+  opacity: 0.9;
+}
+
+.badge.full { background: #ffd6d6; border-color: #ffb3b3; }
+.badge.half { background: #ffedb3; border-color: #ffe08a; }
+.badge.empty { background: #d9ffd9; border-color: #b7f0b7; }
+
+    
   </style>
 </head>
 <body>
