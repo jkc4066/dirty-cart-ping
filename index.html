@@ -1,0 +1,94 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Dirty Cart Dashboard</title>
+  <style>
+    body{font-family:system-ui;max-width:980px;margin:24px auto;padding:16px}
+    .top{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+    input{padding:10px;border-radius:12px;border:1px solid #ccc}
+    button{padding:10px 12px;border-radius:12px;border:1px solid #999;background:#fff}
+    .grid{display:grid;gap:10px;margin-top:14px}
+    .card{border:1px solid #ddd;border-radius:14px;padding:12px;display:flex;justify-content:space-between;gap:10px}
+    .meta{font-size:12px;opacity:.75;margin-top:4px}
+  </style>
+</head>
+<body>
+  <h1>Dirty Cart Pickup Dashboard</h1>
+
+  <div class="top">
+    <label>Initials (optional) <input id="initials" placeholder="JC" maxlength="6"></label>
+    <button id="refresh">Refresh</button>
+  </div>
+
+  <h2>Open Requests</h2>
+  <div id="open" class="grid"></div>
+
+  <h2 style="margin-top:24px">Recent History</h2>
+  <div id="hist"></div>
+
+  <script type="module">
+    import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
+
+    const SUPABASE_URL = https://rhmeofcungoogrdbwdbc.supabase.co;
+    const SUPABASE_ANON_KEY = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJobWVvZmN1bmdvb2dyZGJ3ZGJjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0ODc1MTIsImV4cCI6MjA4MzA2MzUxMn0.nDWPYRkdal1aeoq3f6iukTyATnbkcUmSWdG0B0YjZ9A;
+
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    function statusRank(s){ return s==="FULL"?0 : s==="HALF"?1 : 2; }
+    function fmt(t){ return new Date(t).toLocaleString(); }
+
+    async function load(){
+      const { data, error } = await supabase
+        .from("cart_requests")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(200);
+
+      if (error) { alert(error.message); return; }
+
+      const rows = data || [];
+      const openRows = rows.filter(r => !r.resolved_at)
+        .sort((a,b) => statusRank(a.status)-statusRank(b.status) || new Date(a.created_at)-new Date(b.created_at));
+
+      const open = document.getElementById("open");
+      open.innerHTML = "";
+
+      openRows.forEach(r => {
+        const div = document.createElement("div");
+        div.className = "card";
+        div.innerHTML = `
+          <div>
+            <b>${r.unit}</b> — ${r.status==="FULL"?"Full":r.status==="HALF"?"Half Full":"Empty"}
+            <div class="meta">${fmt(r.created_at)}${r.location_note ? " • " + r.location_note : ""}</div>
+          </div>
+          <div>
+            <button data-id="${r.id}">Mark Picked Up</button>
+          </div>
+        `;
+        div.querySelector("button").addEventListener("click", async () => {
+          const initials = document.getElementById("initials").value.trim().slice(0,6) || null;
+          await supabase.from("cart_requests")
+            .update({ resolved_at: new Date().toISOString(), resolved_by: initials })
+            .eq("id", r.id);
+          await load();
+        });
+        open.appendChild(div);
+      });
+
+      const hist = document.getElementById("hist");
+      hist.innerHTML = rows.slice(0, 12).map(r => {
+        const resolved = r.resolved_at ? ` (resolved ${fmt(r.resolved_at)}${r.resolved_by ? " by " + r.resolved_by : ""})` : "";
+        return `<div style="padding:6px 0;border-bottom:1px solid #f0f0f0">
+          <b>${r.unit}</b> — ${r.status} — ${fmt(r.created_at)}${resolved}
+        </div>`;
+      }).join("");
+    }
+
+    document.getElementById("refresh").addEventListener("click", load);
+    load();
+    setInterval(load, 8000);
+  </script>
+</body>
+</html>
