@@ -95,32 +95,39 @@
     open.innerHTML = "";
 
     openRows.forEach(r => {
-     const div = document.createElement("div");
+         const div = document.createElement("div");
 
-const statusClass =
-  r.status === "FULL" ? "full" :
-  r.status === "HALF" ? "half" :
-  "empty";
+      const statusClass =
+        r.status === "FULL" ? "full" :
+        r.status === "HALF" ? "half" :
+        "empty";
 
-div.className = `card ${statusClass}`;
+      const statusLabel =
+        r.status === "FULL" ? "Full" :
+        r.status === "HALF" ? "Half Full" :
+        "Empty";
 
-const statusLabel =
-  r.status === "FULL" ? "Full" :
-  r.status === "HALF" ? "Half Full" :
-  "Empty";
+      div.className = `card ${statusClass}`;
 
+      div.innerHTML = `
+        <div>
+          <b>${r.unit}</b>
+          <span class="badge ${statusClass}">${statusLabel}</span>
           <div class="meta">${fmt(r.created_at)}${r.location_note ? " • " + r.location_note : ""}</div>
         </div>
         <div>
           <button>Mark Picked Up</button>
         </div>
       `;
+
       div.querySelector("button").addEventListener("click", async () => {
-        const initials = document.getElementById("initials").value.trim().slice(0,6);
+        const initials = document.getElementById("initials").value.trim().slice(0, 6);
         await supaResolve(r.id, initials);
         await load();
       });
+
       open.appendChild(div);
+
     });
 
    const hist = document.getElementById("hist");
