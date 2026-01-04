@@ -45,7 +45,12 @@
   const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
 
   const params = new URLSearchParams(location.search);
-  const unit = params.get("unit") || "";
+  const unit =
+  params.get("unit") ||
+  params.get("Unit") ||
+  params.get("UNIT") ||
+  "";
+
   document.getElementById("unitLabel").textContent = unit || "(missing)";
 
   let status = "HALF";
