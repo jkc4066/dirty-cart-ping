@@ -95,11 +95,20 @@
     open.innerHTML = "";
 
     openRows.forEach(r => {
-      const div = document.createElement("div");
-      div.className = "card";
-      div.innerHTML = `
-        <div>
-          <b>${r.unit}</b> — ${r.status==="FULL"?"Full":r.status==="HALF"?"Half Full":"Empty"}
+     const div = document.createElement("div");
+
+const statusClass =
+  r.status === "FULL" ? "full" :
+  r.status === "HALF" ? "half" :
+  "empty";
+
+div.className = `card ${statusClass}`;
+
+const statusLabel =
+  r.status === "FULL" ? "Full" :
+  r.status === "HALF" ? "Half Full" :
+  "Empty";
+
           <div class="meta">${fmt(r.created_at)}${r.location_note ? " • " + r.location_note : ""}</div>
         </div>
         <div>
