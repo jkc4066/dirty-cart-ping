@@ -1,1 +1,105 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Dirty Cart Pickup Request</title>
+  <style>
+    body{font-family:system-ui;max-width:540px;margin:32px auto;padding:16px}
+    .row{display:flex;gap:10px;margin:14px 0}
+    button{flex:1;padding:12px;border-radius:14px;border:1px solid #ccc;background:#fff}
+    button.active{background:#eee}
+    input{width:100%;padding:12px;border-radius:14px;border:1px solid #ccc;margin-top:6px}
+    .card{border:1px solid #ddd;border-radius:14px;padding:12px;margin-top:14px}
+    .err{color:crimson}
+    .small{font-size:12px;opacity:.75;margin-top:14px}
+  </style>
+</head>
+<body>
+  <h1>Dirty Cart Pickup Request</h1>
+  <div class="card">
+    <div><b>Unit:</b> <span id="unitLabel"></span></div>
+  </div>
+
+  <div class="row">
+    <button id="EMPTY">Empty</button>
+    <button id="HALF" class="active">Half Full</button>
+    <button id="FULL">Full</button>
+  </div>
+
+  <label>
+    Location note (optional)
+    <input id="note" placeholder='e.g., "soiled utility"' maxlength="120" />
+  </label>
+
+  <p id="msg" class="err"></p>
+  <button id="submit" style="width:100%;margin-top:16px;padding:12px;border-radius:14px;border:1px solid #999">
+    Submit Request
+  </button>
+
+  <p class="small">Please do not include patient names, room numbers, or medical information.</p>
+
+  <script>
+  // Replace with your values
+  const SUPABASE_URL = "YOUR_SUPABASE_URL";
+  const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
+
+  const params = new URLSearchParams(location.search);
+  const unit =
+  params.get("unit") ||
+  params.get("Unit") ||
+  params.get("UNIT") ||
+  "";
+
+  document.getElementById("unitLabel").textContent = unit || "(missing)";
+
+  let status = "HALF";
+  const btns = ["EMPTY","HALF","FULL"].map(id => document.getElementById(id));
+
+  function setActive(id){
+    status = id;
+    btns.forEach(b => b.classList.toggle("active", b.id === id));
+  }
+  btns.forEach(b => b.addEventListener("click", () => setActive(b.id)));
+
+  async function insertRequest(payload) {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/cart_requests`, {
+      method: "POST",
+      headers: {
+        "apikey": SUPABASE_ANON_KEY,
+        "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
+        "Content-Type": "application/json",
+        "Prefer": "return=minimal"
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(text || `Request failed: ${res.status}`);
+    }
+  }
+
+  document.getElementById("submit").addEventListener("click", async () => {
+    const msg = document.getElementById("msg");
+    msg.textContent = "";
+
+    if (!unit) { msg.textContent = "Missing unit. Use a QR code link like ?unit=5A"; return; }
+
+    const note = document.getElementById("note").value.trim();
+    if (note.length > 120) { msg.textContent = "Please keep the note under 120 characters."; return; }
+
+    try {
+      await insertRequest({ unit, status, location_note: note || null });
+      document.getElementById("submit").disabled = true;
+      document.getElementById("submit").textContent = "Submitted — thank you!";
+    } catch (e) {
+      msg.textContent = String(e.message || e);
+    }
+  });
+</script>
+
+  
+</body>
+</html>
 
