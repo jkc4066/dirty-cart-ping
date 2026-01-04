@@ -97,7 +97,7 @@
    const hist = document.getElementById("hist");
 hist.innerHTML = rows
   .filter(r => r.resolved_at)
-  .slice(0, 5)
+  .slice(0, 20)
   .map(r => {
     const resolved = ` (resolved ${fmt(r.resolved_at)}${r.resolved_by ? " by " + r.resolved_by : ""})`;
     return `<div style="padding:6px 0;border-bottom:1px solid #f0f0f0">
