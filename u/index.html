@@ -179,7 +179,7 @@ async function createOrEscalate(unit, incomingStatus, note) {
     if (note.length > 120) { msg.textContent = "Please keep the note under 120 characters."; return; }
 
     try {
-      await insertRequest({ unit, status, location_note: note || null });
+     await createOrEscalate(unit, status, note);
       document.getElementById("submit").disabled = true;
       document.getElementById("submit").textContent = "Submitted — thank you!";
     } catch (e) {
