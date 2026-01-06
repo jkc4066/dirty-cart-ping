@@ -130,6 +130,7 @@
         const initials = document.getElementById("initials").value.trim().slice(0, 6);
         await supaResolve(r.id, initials);
         await load();
+        
       });
 
       open.appendChild(div);
@@ -152,6 +153,16 @@ hist.innerHTML = rows
   document.getElementById("refresh").addEventListener("click", () => load().catch(e => alert(e.message)));
   load().catch(e => alert(e.message));
   setInterval(() => load().catch(()=>{}), 8000);
+  // ===== Recent History toggle =====
+const histWrap = document.getElementById("histWrap");
+const toggleHistBtn = document.getElementById("toggleHist");
+
+toggleHistBtn.addEventListener("click", () => {
+  const isHidden = histWrap.style.display === "none";
+  histWrap.style.display = isHidden ? "block" : "none";
+  toggleHistBtn.textContent = isHidden ? "Hide" : "Show";
+});
+
 </script>
 
   
