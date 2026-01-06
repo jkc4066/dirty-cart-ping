@@ -40,11 +40,100 @@
   <p class="small">Please do not include patient names, room numbers, or medical information.</p>
 
   <script>
+    
   // Replace with your values
   const SUPABASE_URL = "https://rhmeofcungoogrdbwdbc.supabase.co";
   const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJobWVvZmN1bmdvb2dyZGJ3ZGJjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0ODc1MTIsImV4cCI6MjA4MzA2MzUxMn0.nDWPYRkdal1aeoq3f6iukTyATnbkcUmSWdG0B0YjZ9A";
-
   const params = new URLSearchParams(location.search);
+
+function rankStatus(s) {
+  return s === "FULL" ? 2 : s === "HALF" ? 1 : 0; // EMPTY=0, HALF=1, FULL=2
+}
+
+function chooseEscalated(current, incoming) {
+  return rankStatus(incoming) > rankStatus(current) ? incoming : current;
+}
+
+async function getOpenRequestForUnit(unit) {
+  const url = `${SUPABASE_URL}/rest/v1/cart_requests?select=id,status,location_note&unit=eq.${encodeURIComponent(unit)}&resolved_at=is.null&limit=1`;
+  const res = await fetch(url, {
+    headers: {
+      "apikey": SUPABASE_ANON_KEY,
+      "Authorization": `Bearer ${SUPABASE_ANON_KEY}`
+    }
+  });
+  if (!res.ok) throw new Error(await res.text());
+  const data = await res.json();
+  return data[0] || null;
+}
+
+async function patchRequestById(id, payload) {
+  const url = `${SUPABASE_URL}/rest/v1/cart_requests?id=eq.${encodeURIComponent(id)}`;
+  const res = await fetch(url, {
+    method: "PATCH",
+    headers: {
+      "apikey": SUPABASE_ANON_KEY,
+      "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
+      "Content-Type": "application/json",
+      "Prefer": "return=minimal"
+    },
+    body: JSON.stringify(payload)
+  });
+  if (!res.ok) throw new Error(await res.text());
+}
+
+async function postRequest(payload) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/cart_requests`, {
+    method: "POST",
+    headers: {
+      "apikey": SUPABASE_ANON_KEY,
+      "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
+      "Content-Type": "application/json",
+      "Prefer": "return=minimal"
+    },
+    body: JSON.stringify(payload)
+  });
+
+  if (!res.ok) throw new Error(await res.text());
+}
+
+/**
+ * Creates a new open request for the unit, OR updates the existing open one.
+ * - Status only escalates (never decreases)
+ * - Note: overwrites only if a new note is provided; otherwise keeps existing
+ */
+async function createOrEscalate(unit, incomingStatus, note) {
+  const existing = await getOpenRequestForUnit(unit);
+
+  if (existing) {
+    const nextStatus = chooseEscalated(existing.status, incomingStatus);
+    const nextNote = note ? note : existing.location_note;
+
+    // Only PATCH if something changes (optional but clean)
+    if (nextStatus !== existing.status || nextNote !== existing.location_note) {
+      await patchRequestById(existing.id, { status: nextStatus, location_note: nextNote });
+    }
+    return;
+  }
+
+  // No open request exists: create one
+  try {
+    await postRequest({ unit, status: incomingStatus, location_note: note || null });
+  } catch (e) {
+    // If two people submit at the same time, the unique index may throw a conflict.
+    // Recover by fetching the now-existing request and escalating it.
+    const again = await getOpenRequestForUnit(unit);
+    if (again) {
+      const nextStatus = chooseEscalated(again.status, incomingStatus);
+      const nextNote = note ? note : again.location_note;
+      await patchRequestById(again.id, { status: nextStatus, location_note: nextNote });
+      return;
+    }
+    throw e;
+  }
+}
+
+    
   const unit =
   params.get("unit") ||
   params.get("Unit") ||
