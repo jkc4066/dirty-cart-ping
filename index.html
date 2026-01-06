@@ -45,8 +45,14 @@
   <h2>Open Requests</h2>
   <div id="open" class="grid"></div>
 
-  <h2 style="margin-top:24px">Recent History</h2>
+  <div class="top" style="margin-top:24px">
+  <h2 style="margin:0">Recent History</h2>
+  <button id="toggleHist" type="button">Show</button>
+</div>
+
+<div id="histWrap" style="display:none">
   <div id="hist"></div>
+</div>
 
 <script>
   const SUPABASE_URL = "https://rhmeofcungoogrdbwdbc.supabase.co";
