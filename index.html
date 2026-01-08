@@ -91,11 +91,68 @@
     if (!res.ok) throw new Error(await res.text());
   }
 
+function parseUnit(unit) {
+  // Normalize + split: SKY-7-M
+  const parts = String(unit || "")
+    .toUpperCase()
+    .split("-");
+
+  return {
+    tower: parts[0] || "",
+    floor: parseInt(parts[1], 10) || 0,
+    loc: parts[2] || ""
+  };
+}
+
+function towerOrder(t) {
+  if (t === "RIO") return 1;
+  if (t === "SKY") return 2;
+  if (t === "WC")  return 3;
+  return 99;
+}
+
+function locOrder(l) {
+  if (l === "L") return 1;
+  if (l === "M") return 2;
+  if (l === "R") return 3;
+  if (l === "A") return 4;
+  return 9;
+}
+
+  
   async function load(){
     const rows = await supaSelect();
 
-    const openRows = rows.filter(r => !r.resolved_at)
-      .sort((a,b) => statusRank(a.status)-statusRank(b.status) || new Date(a.created_at)-new Date(b.created_at));
+    const openRows = rows
+  .filter(r => !r.resolved_at)
+  .sort((a, b) => {
+    const A = parseUnit(a.unit);
+    const B = parseUnit(b.unit);
+
+    // 1️⃣ Tower
+    if (towerOrder(A.tower) !== towerOrder(B.tower)) {
+      return towerOrder(A.tower) - towerOrder(B.tower);
+    }
+
+    // 2️⃣ Floor
+    if (A.floor !== B.floor) {
+      return A.floor - B.floor;
+    }
+
+    // 3️⃣ Location
+    if (locOrder(A.loc) !== locOrder(B.loc)) {
+      return locOrder(A.loc) - locOrder(B.loc);
+    }
+
+    // 4️⃣ Urgency
+    if (statusRank(a.status) !== statusRank(b.status)) {
+      return statusRank(a.status) - statusRank(b.status);
+    }
+
+    // 5️⃣ Age (oldest first)
+    return new Date(a.created_at) - new Date(b.created_at);
+  });
+
 
     const open = document.getElementById("open");
     open.innerHTML = "";
